@@ -41,4 +41,10 @@ defmodule Set1 do
 		decode_list = Enum.map(character_table, fn c -> single_byte_xor(str, c) end)
 		Enum.max_by(decode_list, fn str -> score(str) end)
 	end
+
+	### challenge 4
+	def repeating_key_xor(str, key) do
+		repeated_key = String.duplicate(key, byte_size(str) + 1) |> String.slice(0, byte_size(str))
+		fixed_xor(str, repeated_key) |> Base.encode16 |> String.downcase
+	end
 end
