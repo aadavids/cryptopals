@@ -20,8 +20,8 @@ defmodule Set1 do
 	end
 
 	def single_byte_xor(str, byte) do
-		String.duplicate(byte, byte_size(str))
-		fixed_xor(str, String.duplicate(byte, byte_size(str)))
+		:binary.copy(byte, byte_size(str))
+		fixed_xor(str, :binary.copy(byte, byte_size(str)))
 	end
 
 	def score(str) do
@@ -37,14 +37,21 @@ defmodule Set1 do
 	### challenge 3
 	def break_single_byte_xor(hex) do
 		str = hex |> String.upcase |> Base.decode16!
-		character_table = Enum.concat(?A..?Z, ?a..?z) |> List.to_string |> String.graphemes
-		decode_list = Enum.map(character_table, fn c -> single_byte_xor(str, c) end)
-		Enum.max_by(decode_list, fn str -> score(str) end)
+		character_table = 0..255
+		decode_list = Enum.map(character_table, fn c -> single_byte_xor(str, <<c>>) end)
+		Enum.map(decode_list, fn str -> {score(str), str} end) |> Enum.max_by(fn {score, _str} -> score end)
 	end
 
 	### challenge 4
+	def detect_single_character_xor do
+		"4.txt" |> File.read! |> String.split("\n") 
+		|> Enum.map(fn l -> Set1.break_single_byte_xor(l) end) 
+		|> Enum.max_by(fn {score, _str} -> score end)
+	end
+
+	### challenge 5
 	def repeating_key_xor(str, key) do
-		repeated_key = String.duplicate(key, byte_size(str) + 1) |> String.slice(0, byte_size(str))
+		repeated_key = :binary.copy(key, byte_size(str) + 1) |> String.slice(0, byte_size(str))
 		fixed_xor(str, repeated_key) |> Base.encode16 |> String.downcase
 	end
 end

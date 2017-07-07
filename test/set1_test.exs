@@ -17,7 +17,11 @@ defmodule Set1Test do
 
 	test "Challenge 3" do
 		hex = "1b37373331363f78151b7f2b783431333d78397828372d363c78373e783a393b3736"
-		assert Set1.break_single_byte_xor(hex) == "Cooking MC's like a pound of bacon"
+		assert Set1.break_single_byte_xor(hex) == {2.2641048999999995, "Cooking MC's like a pound of bacon"}
+	end
+
+	test "Challenge 4" do
+		assert Set1.detect_single_character_xor() == {2.0881317999999998, "Now that the party is jumping\n"}
 	end
 
 	test "Challenge 5" do
