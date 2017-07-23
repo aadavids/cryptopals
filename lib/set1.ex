@@ -43,4 +43,10 @@ defmodule Set1 do
 		ct = "7.txt" |> File.read! |> Base.decode64!(ignore: :whitespace)
 		Crypto.aes128_ecb_decrypt(ct, key)
 	end	
+
+	def challenge8 do
+		cts = File.read!("8.txt") |> String.trim |> String.split("\n") |> Enum.map(&Bytes.hex_to_bytes/1)
+		ecb = cts |> Enum.filter(fn ct -> length(for <<x::binary-16 <- ct>>, do: x) != length((for <<x::binary-16 <- ct>>, do: x) |> Enum.uniq) end) |> hd
+		Base.encode16 ecb
+	end
 end
