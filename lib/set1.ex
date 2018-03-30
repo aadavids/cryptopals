@@ -41,7 +41,7 @@ defmodule Set1 do
 	def challenge7 do
 		key = "YELLOW SUBMARINE"
 		ct = "7.txt" |> File.read! |> Base.decode64!(ignore: :whitespace)
-		Crypto.aes128_ecb_decrypt(ct, key)
+		Crypto.aes128_ecb_decrypt(ct, key) |> String.replace(~r/\x00|\x04/, "")
 	end	
 
 	def challenge8 do
