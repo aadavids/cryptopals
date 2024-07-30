@@ -61,9 +61,7 @@ module Set1
     end
 
     # assumes the message is english plaintext
-    def self.break hex
-      bytes = Base::hex_to_bytes(hex)
-
+    def self.break bytes
       keys = [*'a'..'z', *'A'..'Z', *'0'..'9']
 
       key = ''
@@ -82,7 +80,7 @@ module Set1
 
     # detects a string encrypted by single character xor
     def self.detect hex_strings
-      hex_strings.map { |string| Set1::SingleByteXOR.break(string)}.max_by { |result| result[:confidence] }
+      hex_strings.map { |string| Set1::SingleByteXOR.break(Base::hex_to_bytes(string))}.max_by { |result| result[:confidence] }
     end
 
     def self.score string
