@@ -100,5 +100,13 @@ module Set1
         acc += CHAR_FREQUENCIES.fetch(char.downcase, 0)
       end
     end
+
+    def self.hamming_distance s1, s2
+      return ArgumentError "Strings must be equal length" unless s1.length == s2.length
+
+      s1.bytes.zip(s2.bytes).reduce(0) do |acc, (c1, c2)|
+        acc + (c1 ^ c2).to_s(2).count("1")
+      end
+    end
   end
 end
