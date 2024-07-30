@@ -28,6 +28,45 @@ module Set1
 
   # this class operates on raw bytes. TODO: update others to match
   module SingleByteXOR
+    def self.encode bytes, key
+      bytes.map {|a| a^key}
+    end
+
+    # assumes the message is english plaintext
+    def self.break bytes
+      keys = [*'a'..'z', *'A'..'Z', *'0'..'9']
+
+      key = ''
+      max_score = 0
+      keys.each do |key_candidate|
+        decoded = self.encode(bytes, key_candidate.bytes.first)
+        score = English.score(decoded.pack("C*"))
+         if score>max_score
+          max_score = score
+          key = key_candidate
+         end
+      end
+
+      {key: key, confidence: max_score, string: self.encode(bytes, key.bytes.first).pack("C*")}
+    end
+
+    # detects a string encrypted by single character xor
+    def self.detect hex_strings
+      hex_strings.map { |string| Set1::SingleByteXOR.break(Base::hex_to_bytes(string))}.max_by { |result| result[:confidence] }
+    end
+  end
+
+  module RepeatingKeyXOR
+    def self.encrypt(string, key)
+      key_stream = key * (string.length / key.length + 1)
+      string.bytes.zip(key_stream.bytes).map {|a, b| a^b}.pack('C*')
+    end
+
+    def self.break
+    end
+  end
+
+  module English
     CHAR_FREQUENCIES = {
       'e' => 11.1607,
       'a' => 8.4966,
@@ -56,44 +95,10 @@ module Set1
       'j' => 0.1965,
       'q' => 0.1962
     }
-    def self.encode bytes, key
-      bytes.map {|a| a^key}
-    end
-
-    # assumes the message is english plaintext
-    def self.break bytes
-      keys = [*'a'..'z', *'A'..'Z', *'0'..'9']
-
-      key = ''
-      max_score = 0
-      keys.each do |key_candidate|
-        decoded = self.encode(bytes, key_candidate.bytes.first)
-        score = self.score(decoded.pack("C*"))
-         if score>max_score
-          max_score = score
-          key = key_candidate
-         end
-      end
-
-      {key: key, confidence: max_score, string: self.encode(bytes, key.bytes.first).pack("C*")}
-    end
-
-    # detects a string encrypted by single character xor
-    def self.detect hex_strings
-      hex_strings.map { |string| Set1::SingleByteXOR.break(Base::hex_to_bytes(string))}.max_by { |result| result[:confidence] }
-    end
-
     def self.score string
       string.each_char.reduce(0) do |acc, char|
         acc += CHAR_FREQUENCIES.fetch(char.downcase, 0)
       end
-    end
-  end
-
-  module RepeatingKeyXOR
-    def self.encrypt(string, key)
-      key_stream = key * (string.length / key.length + 1)
-      string.bytes.zip(key_stream.bytes).map {|a, b| a^b}.pack('C*')
     end
   end
 end
