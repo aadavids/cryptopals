@@ -89,4 +89,11 @@ module Set1
       end
     end
   end
+
+  module RepeatingKeyXOR
+    def self.encrypt(string, key)
+      key_stream = key * (string.length / key.length + 1)
+      string.bytes.zip(key_stream.bytes).map {|a, b| a^b}.pack('C*')
+    end
+  end
 end
