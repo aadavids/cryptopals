@@ -42,7 +42,19 @@ module Set1
       'u' => 3.6308,
       'd' => 3.3844,
       'p' => 3.1671,
-      'm' => 3.0129
+      'm' => 3.0129,
+      'h' => 3.0034,
+      'g' => 2.4705,
+      'b' => 2.0720,
+      'f' => 1.8121,
+      'y' => 1.7779,
+      'w' => 1.2899,
+      'k' => 1.1016,
+      'v' => 1.0074,
+      'x' => 0.2902,
+      'z' => 0.2722,
+      'j' => 0.1965,
+      'q' => 0.1962
     }
     def self.encode bytes, key
       bytes.map {|a| a^key}
@@ -65,7 +77,12 @@ module Set1
          end
       end
 
-      [key, self.encode(bytes, key.bytes.first).pack("C*")]
+      {key: key, confidence: max_score, string: self.encode(bytes, key.bytes.first).pack("C*")}
+    end
+
+    # detects a string encrypted by single character xor
+    def self.detect hex_strings
+      hex_strings.map { |string| Set1::SingleByteXOR.break(string)}.max_by { |result| result[:confidence] }
     end
 
     def self.score string
