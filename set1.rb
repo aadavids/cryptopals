@@ -34,12 +34,12 @@ module Set1
 
     # assumes the message is english plaintext
     def self.break bytes
-      keys = [*'a'..'z', *'A'..'Z', *'0'..'9']
+      keys = 0..255
 
       key = ''
       max_score = 0
       keys.each do |key_candidate|
-        decoded = self.encode(bytes, key_candidate.bytes.first)
+        decoded = self.encode(bytes, key_candidate)
         score = English.score(decoded.pack("C*"))
          if score>max_score
           max_score = score
@@ -47,7 +47,7 @@ module Set1
          end
       end
 
-      {key: key, confidence: max_score, string: self.encode(bytes, key.bytes.first).pack("C*")}
+      {key: key, key_str: [key].pack("C*"), confidence: max_score, string: self.encode(bytes, key).pack("C*")}
     end
 
     # detects a string encrypted by single character xor
@@ -67,44 +67,79 @@ module Set1
   end
 
   module English
-    CHAR_FREQUENCIES = {
-      'e' => 11.1607,
-      'a' => 8.4966,
-      'r' => 7.5809,
-      'i' => 7.5448,
-      'o' => 7.1635,
-      't' => 6.9509,
-      'n' => 6.6544,
-      's' => 5.7351,
-      'l' => 5.4893,
-      'c' => 4.5388,
-      'u' => 3.6308,
-      'd' => 3.3844,
-      'p' => 3.1671,
-      'm' => 3.0129,
-      'h' => 3.0034,
-      'g' => 2.4705,
-      'b' => 2.0720,
-      'f' => 1.8121,
-      'y' => 1.7779,
-      'w' => 1.2899,
-      'k' => 1.1016,
-      'v' => 1.0074,
-      'x' => 0.2902,
-      'z' => 0.2722,
-      'j' => 0.1965,
-      'q' => 0.1962
+    ENGLISH_HISTOGRAM = {
+      "a"=>0.0651738,
+      "b"=>0.0124248,
+      "c"=>0.0217339,
+      "d"=>0.0349835,
+      "e"=>0.1041442,
+      "f"=>0.0197881,
+      "g"=>0.0158610,
+      "h"=>0.0492888,
+      "i"=>0.0558094,
+      "j"=>0.0009033,
+      "k"=>0.0050529,
+      "l"=>0.0331490,
+      "m"=>0.0202124,
+      "n"=>0.0564513,
+      "o"=>0.0596302,
+      "p"=>0.0137645,
+      "q"=>0.0008606,
+      "r"=>0.0497563,
+      "s"=>0.0515760,
+      "t"=>0.0729357,
+      "u"=>0.0225134,
+      "v"=>0.0082903,
+      "w"=>0.0171272,
+      "x"=>0.0013692,
+      "y"=>0.0145984,
+      "z"=>0.0007836,
+      " "=>0.1918182,
+      '.'=>0.07 # approx for all other digits and puncuation
     }
+
     def self.score string
-      string.each_char.reduce(0) do |acc, char|
-        acc += CHAR_FREQUENCIES.fetch(char.downcase, 0)
+      return 0 unless self.printable?(string)
+      input = string.downcase.tr('^ a-z', '.')
+      histogram = self.frequencies(input)
+
+      score = 1 / self.chi_squared(ENGLISH_HISTOGRAM, histogram)
+      score *= 2 if histogram['.'] < 0.05
+      score
+    end
+
+    def self.chi_squared(hist1, hist2)
+      score = 0
+      hist1.each do |k, v1|
+        v2 = hist2[k] || 0
+        next if v1.zero?
+        score += (v1 - v2)**2 / v1
       end
+      score
+    end
+
+    def self.printable?(string)
+      string[/^[[:print:]]*$/]
+    end
+
+    def self.frequencies string
+      result = Hash.new {|h,k| h[k] = 0}
+      total = string.length
+      string.each_char {|char| result[char] += 1}
+      result.each { |k, v| result[k] = v.to_f / total }
+      result
     end
 
     def self.hamming_distance s1, s2
       return ArgumentError "Strings must be equal length" unless s1.length == s2.length
 
-      s1.bytes.zip(s2.bytes).reduce(0) do |acc, (c1, c2)|
+      self.hamming_distance_bytes s1.bytes, s2.bytes
+    end
+
+    def self.hamming_distance_bytes b1, b2
+      return ArgumentError "byte streams must be equal length" unless b1.length == b2.length
+
+      b1.zip(b2).reduce(0) do |acc, (c1, c2)|
         acc + (c1 ^ c2).to_s(2).count("1")
       end
     end
