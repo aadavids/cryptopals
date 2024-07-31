@@ -62,7 +62,43 @@ module Set1
       string.bytes.zip(key_stream.bytes).map {|a, b| a^b}.pack('C*')
     end
 
-    def self.break
+    def self.code(bytes, key)
+      key_stream = key * (bytes.length / key.length + 1)
+      bytes.zip(key_stream).map {|a, b| a^b}
+    end
+
+    # currently assumes string is longer than 200 characters
+    def self.break(bytes)
+
+      key_size_candidates = (2..40).sort_by do |size|
+        [
+          English.hamming_distance_bytes(bytes[0, size], bytes[size, size])/size.to_f,
+          English.hamming_distance_bytes(bytes[size, size], bytes[size*2, size])/size.to_f,
+          English.hamming_distance_bytes(bytes[size*2, size], bytes[size*3, size])/size.to_f,
+          English.hamming_distance_bytes(bytes[size*3, size], bytes[size*4, size])/size.to_f,
+      ].sum / 4
+      end[0,3]
+
+      max_score = 0
+      key = ""
+      plaintext = ""
+      key_size_candidates.each do |key_size|
+        chunks = bytes.each_slice(key_size).to_a
+        size = chunks.map(&:length).max
+        blocks = Array.new(size) { |i| chunks.map { |e| e[i] }.reject(&:nil?) }
+
+        candidate_key = blocks.map {|block| SingleByteXOR.break(block)[:key]}
+
+        candidate_plaintext = RepeatingKeyXOR.code(bytes, candidate_key).pack('C*')
+        score = English.score(candidate_plaintext)
+        if score > max_score
+          max_score = score
+          key = candidate_key
+          plaintext = candidate_plaintext
+        end
+      end
+
+      {key: key.pack('C*'), plaintext: plaintext}
     end
   end
 
