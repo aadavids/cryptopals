@@ -1,4 +1,11 @@
 module Set1
+  require_relative 'aes'
+
+  def challenge_7
+    file = File.read('7.txt')
+    input = Base64.decode64(file)
+    AES.decrypt_ecb(input, "YELLOW SUBMARINE")
+  end
 
   module Base
     def self.hex_to_base64 hex
