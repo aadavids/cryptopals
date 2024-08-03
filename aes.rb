@@ -1,4 +1,4 @@
-require 'openssl/cipher'
+require 'openssl'
 module AES
   def self.decrypt_ecb ciphertext, key
     cipher = OpenSSL::Cipher::AES128.new(:ECB)
